@@ -1,0 +1,217 @@
+"""
+Prompt templates for all LangGraph agents.
+Each function returns a fully-rendered string ready to pass to the LLM.
+"""
+from __future__ import annotations
+
+
+def company_research_prompt(
+    company_name: str,
+    website: str,
+    web_content: str,
+    search_results: str,
+) -> str:
+    return f"""You are an expert business intelligence researcher. Analyze all available data about
+a company and extract structured information.
+
+COMPANY: {company_name}
+WEBSITE: {website}
+
+WEBSITE CONTENT:
+{web_content[:6000]}
+
+WEB SEARCH RESULTS:
+{search_results[:6000]}
+
+Extract and return a JSON object with EXACTLY these fields:
+{{
+  "company_name": "official company name",
+  "website_url": "canonical website URL",
+  "industry": "primary industry/sector",
+  "description": "2-3 sentence company description",
+  "services": ["list", "of", "main", "services or products"],
+  "technology_stack": ["technologies used if identifiable"],
+  "competitors": ["3-5 main competitors"],
+  "recent_news": ["3-5 recent notable events or news items"],
+  "linkedin_data": "any LinkedIn profile information found",
+  "founded": "founding year if known, else null",
+  "employee_count": "estimated employee count or range if known, else null",
+  "headquarters": "city, country if known, else null",
+  "raw_web_content": ""
+}}
+
+Return ONLY valid JSON. No markdown. No explanation."""
+
+
+def business_analysis_prompt(
+    company_name: str,
+    research_data: str,
+    website_content: str,
+) -> str:
+    return f"""You are a senior management consultant specializing in business transformation and AI adoption.
+Analyze this company thoroughly.
+
+COMPANY: {company_name}
+
+RESEARCH DATA:
+{research_data}
+
+WEBSITE CONTENT (first 3000 chars):
+{website_content[:3000]}
+
+Return a JSON object with EXACTLY these fields:
+{{
+  "business_model": "description of how the company makes money",
+  "target_audience": "primary customer segments",
+  "strengths": ["3-5 key strengths"],
+  "weaknesses": ["3-5 notable weaknesses or gaps"],
+  "pain_points": ["3-5 operational or strategic pain points"],
+  "ai_opportunities": ["5-7 specific AI/automation opportunities"],
+  "market_position": "brief assessment of competitive position",
+  "revenue_model": "B2B/B2C/SaaS/services/etc and revenue streams"
+}}
+
+Return ONLY valid JSON. No markdown. No explanation."""
+
+
+def insight_generation_prompt(
+    company_name: str,
+    website: str,
+    website_content: str,
+    analysis_data: str,
+) -> str:
+    return f"""You are an AI transformation consultant. Generate actionable insights and a website audit.
+
+COMPANY: {company_name}
+WEBSITE: {website}
+
+WEBSITE CONTENT:
+{website_content[:4000]}
+
+BUSINESS ANALYSIS:
+{analysis_data}
+
+Return a JSON object with EXACTLY these fields:
+{{
+  "website_audit": {{
+    "design_score": 0-10,
+    "ux_score": 0-10,
+    "content_score": 0-10,
+    "seo_score": 0-10,
+    "performance_issues": ["identified issues"],
+    "strengths": ["what works well"],
+    "improvements_needed": ["specific improvements"]
+  }},
+  "recommendations": ["5-7 strategic recommendations with context"],
+  "automation_opportunities": ["5 specific processes that can be automated with AI"],
+  "business_improvements": ["5 operational improvements with expected impact"],
+  "priority_actions": ["top 3 actions to take in the next 90 days"],
+  "estimated_impact": "overall estimated business impact statement"
+}}
+
+Return ONLY valid JSON. No markdown. No explanation."""
+
+
+def report_generation_prompt(
+    lead_name: str,
+    company_name: str,
+    website: str,
+    research_data: str,
+    analysis_data: str,
+    insight_data: str,
+) -> str:
+    return f"""You are a senior consulting writer. Generate a comprehensive, professional business audit report in Markdown.
+
+RECIPIENT: {lead_name}
+COMPANY: {company_name}
+WEBSITE: {website}
+
+RESEARCH DATA:
+{research_data}
+
+BUSINESS ANALYSIS:
+{analysis_data}
+
+INSIGHTS:
+{insight_data}
+
+Generate a complete, professional Markdown report with ALL of these sections:
+
+# Executive Summary
+(2-3 powerful paragraphs summarizing key findings and value proposition)
+
+# Company Overview
+(Detailed company background, industry context, market position)
+
+## Industry Context
+## Business Model
+## Competitive Landscape
+
+# Website Analysis
+(Detailed website assessment with scores and specific observations)
+
+## Design & User Experience
+## Content Strategy
+## Technical Performance
+## SEO Assessment
+
+# AI & Automation Opportunities
+(Specific, actionable AI opportunities with implementation notes)
+
+## Quick Wins (0-3 months)
+## Medium-term Initiatives (3-12 months)  
+## Strategic AI Roadmap (12+ months)
+
+# Strategic Recommendations
+(5-7 detailed recommendations with business rationale)
+
+# Next Steps
+(Clear 90-day action plan with specific milestones)
+
+## Immediate Actions (Week 1-2)
+## Month 1 Priorities
+## 90-Day Milestones
+
+---
+*Report generated by Lead Intelligence AI on behalf of the research team.*
+
+Write in a professional, authoritative consulting tone. Use specific data from the research.
+Minimum 1500 words. Do NOT include placeholder text like [COMPANY] or [INSERT].
+Write the actual content based on the data provided."""
+
+
+def email_subject_prompt(company_name: str, lead_name: str) -> str:
+    return f"""Generate a compelling, professional email subject line for a business audit report.
+Company: {company_name}
+Recipient: {lead_name}
+Return ONLY the subject line text, nothing else."""
+
+
+def validation_prompt(
+    name: str,
+    email: str,
+    company: str,
+    website: str,
+) -> str:
+    return f"""Validate this lead submission data:
+Name: {name}
+Email: {email}
+Company: {company}
+Website: {website}
+
+Check for:
+1. Email format validity
+2. Website URL validity
+3. Non-empty required fields
+4. Obviously fake/test data (e.g., "test@test.com", "John Doe", "ACME Corp")
+
+Return JSON:
+{{
+  "is_valid": true/false,
+  "is_duplicate": false,
+  "errors": ["list of validation errors if any"],
+  "normalised_email": "lowercase trimmed email",
+  "normalised_website": "properly formatted URL with https://"
+}}
+
+Return ONLY valid JSON."""
