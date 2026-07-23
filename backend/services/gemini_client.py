@@ -87,7 +87,7 @@ class LLMClient:
             import functools
 
             loop = asyncio.get_event_loop()
-            candidate_models = [self._settings.gemini_model, "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-pro"]
+            candidate_models = [self._settings.gemini_model, "gemini-2.5-flash", "gemini-2.5-flash-lite",]
             candidate_models = list(dict.fromkeys([m for m in candidate_models if m]))
 
             last_exc = None
