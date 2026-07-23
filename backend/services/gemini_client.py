@@ -54,17 +54,37 @@ class LLMClient:
             import asyncio
             import functools
 
-            model = client
             loop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(
-                None,
-                functools.partial(
-                    model.generate_content,
-                    prompt,
-                    generation_config={"temperature": temperature},
-                ),
-            )
-            return response.text
+            
+            # Try configured model, fallback to common active Gemini models if 404 occurs
+            candidate_models = [self._settings.gemini_model, "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-pro"]
+            # Deduplicate preserving order
+            candidate_models = list(dict.fromkeys([m for m in candidate_models if m]))
+
+            last_exc = None
+            for model_name in candidate_models:
+                try:
+                    import google.generativeai as genai
+                    genai.configure(api_key=self._settings.gemini_api_key)
+                    model = genai.GenerativeModel(model_name)
+                    response = await loop.run_in_executor(
+                        None,
+                        functools.partial(
+                            model.generate_content,
+                            prompt,
+                            generation_config={"temperature": temperature},
+                        ),
+                    )
+                    return response.text
+                except Exception as exc:
+                    last_exc = exc
+                    if "404" in str(exc) or "not found" in str(exc):
+                        logger.warning("Gemini model '%s' failed (404). Trying next fallback model...", model_name)
+                        continue
+                    raise exc
+            if last_exc:
+                raise last_exc
+
 
         elif self._provider == "openai":
             response = await client.chat.completions.create(

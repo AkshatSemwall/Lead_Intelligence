@@ -1,0 +1,131 @@
+{
+  "workflow_id": "60a65d79-0623-4d33-889a-1e976a67dd63",
+  "lead_email": "alex.mercer@stripe.com",
+  "lead_company": "Stripe",
+  "status": "running",
+  "nodes_completed": [
+    "validation"
+  ],
+  "email_sent": false,
+  "pdf_generated": false,
+  "drive_url": null,
+  "errors": {
+    "validation": null,
+    "research": "No module named 'firecrawl'",
+    "analysis": "404 models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.",
+    "insights": "404 models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.",
+    "report": "404 models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.",
+    "pdf": "No module named 'weasyprint'",
+    "email": "Gmail API send failed",
+    "sheets": null,
+    "drive": null
+  },
+  "log_entries": [
+    {
+      "timestamp": "2026-07-22T16:14:57.443845Z",
+      "node": "orchestrator",
+      "status": "started",
+      "message": "Workflow started",
+      "error": null
+    },
+    {
+      "timestamp": "2026-07-22T16:14:57.444887Z",
+      "node": "validation",
+      "status": "started",
+      "message": "Validating lead submission",
+      "error": null
+    },
+    {
+      "timestamp": "2026-07-22T16:14:57.444887Z",
+      "node": "validation",
+      "status": "completed",
+      "message": "Validation passed",
+      "error": null
+    },
+    {
+      "timestamp": "2026-07-22T16:14:57.447072Z",
+      "node": "company_research",
+      "status": "started",
+      "message": "Starting company research",
+      "error": null
+    },
+    {
+      "timestamp": "2026-07-22T16:14:57.448752Z",
+      "node": "company_research",
+      "status": "failed",
+      "message": "No module named 'firecrawl'",
+      "error": "No module named 'firecrawl'"
+    },
+    {
+      "timestamp": "2026-07-22T16:14:57.449318Z",
+      "node": "business_analysis",
+      "status": "started",
+      "message": "Starting business analysis",
+      "error": null
+    },
+    {
+      "timestamp": "2026-07-22T16:14:57.675389Z",
+      "node": "business_analysis",
+      "status": "failed",
+      "message": "404 models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.",
+      "error": "404 models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods."
+    },
+    {
+      "timestamp": "2026-07-22T16:14:57.676710Z",
+      "node": "insight_generation",
+      "status": "started",
+      "message": "Generating insights",
+      "error": null
+    },
+    {
+      "timestamp": "2026-07-22T16:14:58.006510Z",
+      "node": "insight_generation",
+      "status": "failed",
+      "message": "404 models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.",
+      "error": "404 models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods."
+    },
+    {
+      "timestamp": "2026-07-22T16:14:58.008525Z",
+      "node": "report_generation",
+      "status": "started",
+      "message": "Generating report",
+      "error": null
+    },
+    {
+      "timestamp": "2026-07-22T16:15:00.977913Z",
+      "node": "report_generation",
+      "status": "failed",
+      "message": "404 models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.",
+      "error": "404 models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods."
+    },
+    {
+      "timestamp": "2026-07-22T16:15:00.981115Z",
+      "node": "pdf_generation",
+      "status": "started",
+      "message": "Generating PDF",
+      "error": null
+    },
+    {
+      "timestamp": "2026-07-22T16:15:00.982527Z",
+      "node": "pdf_generation",
+      "status": "failed",
+      "message": "No module named 'weasyprint'",
+      "error": "No module named 'weasyprint'"
+    },
+    {
+      "timestamp": "2026-07-22T16:15:00.984868Z",
+      "node": "email",
+      "status": "started",
+      "message": "Sending report email",
+      "error": null
+    },
+    {
+      "timestamp": "2026-07-22T16:15:01.096109Z",
+      "node": "email",
+      "status": "failed",
+      "message": "Gmail API returned failure",
+      "error": "Send failed"
+    }
+  ],
+  "completed_at": "2026-07-22T16:15:01.098115Z"
+}

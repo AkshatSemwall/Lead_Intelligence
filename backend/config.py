@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # ── LLM ──────────────────────────────────────────────────────────────
     gemini_api_key: str = ""
     llm_provider: Literal["gemini", "claude", "openai"] = "gemini"
-    gemini_model: str = "gemini-1.5-pro"
+    gemini_model: str = "gemini-1.5-flash"
     openai_api_key: str = ""
     anthropic_api_key: str = ""
 
