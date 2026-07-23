@@ -6,7 +6,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -62,7 +62,7 @@ async def submit_lead(
 ) -> LeadSubmissionResponse:
     """Accept a lead form submission and trigger the autonomous workflow."""
     workflow_id = str(uuid.uuid4())
-    submitted_at = datetime.utcnow()
+    submitted_at = datetime.now(timezone.utc)
 
     initial_state: WorkflowState = {
         "workflow_id": workflow_id,
@@ -86,7 +86,7 @@ async def submit_lead(
 
     background_tasks.add_task(_run_workflow, workflow_id, initial_state)
 
-    logger.info("Lead submitted — workflow_id=%s email=%s", workflow_id, payload.email)
+    logger.info("Lead submitted — workflow_id=%s company=%s email=%s", workflow_id, payload.company, payload.email)
 
     return LeadSubmissionResponse(
         workflow_id=workflow_id,
@@ -207,7 +207,7 @@ async def health() -> HealthResponse:
     return HealthResponse(
         status="ok",
         version="1.0.0",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
     )
 
 

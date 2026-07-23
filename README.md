@@ -69,17 +69,16 @@ Finalise & Complete
 ```bash
 git clone https://github.com/AkshatSemwall/Lead_Intelligence.git
 cd Lead_Intelligence
-
-# Copy environment variables template
-cp .env.example .env
 ```
 
-Edit `.env` with your API keys and credentials:
+Create a `.env` file in the project root and add your API keys and credentials:
 - `GEMINI_API_KEY`
 - `TAVILY_API_KEY`
 - `FIRECRAWL_API_KEY`
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`
 - `GOOGLE_SHEET_ID`, `GOOGLE_DRIVE_FOLDER_ID`, `GMAIL_SENDER_EMAIL`
+
+> Keep your `.env` file local and do not commit real secrets to source control.
 
 ---
 
@@ -97,14 +96,19 @@ Access the application at: **`http://localhost:8000`**
 #### 1. Backend Setup
 ```bash
 # Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python -m venv .venv
+.venv\Scripts\activate  # On macOS/Linux: source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 
 # Start FastAPI server
 uvicorn backend.main:app --reload --port 8000
+```
+
+#### 2. Verify the installation
+```bash
+pytest -q
 ```
 
 #### 2. Frontend Setup
@@ -178,3 +182,4 @@ Lead_Intelligence/
 - **Async Execution**: Non-blocking background task processing for LangGraph workflows.
 - **Error Handling**: Graceful fallback data generation for research/analysis nodes to ensure pipeline completion.
 - **Retry Logic**: Automatic exponential backoff retry wrapper on external API calls.
+- **Runtime Hardening**: Request ID and security headers, durable workflow persistence, and regression tests for core middleware behavior.

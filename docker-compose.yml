@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000
     container_name: lead_intelligence_app
     ports:
       - "8000:8000"
@@ -13,6 +14,7 @@ services:
     volumes:
       - ./generated_pdfs:/app/generated_pdfs
       - ./workflow_logs:/app/workflow_logs
+      - ./workflow_state:/app/workflow_state
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]

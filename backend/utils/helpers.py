@@ -8,7 +8,7 @@ import json
 import logging
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import wraps
 from typing import Any, Callable, TypeVar
 
@@ -113,7 +113,7 @@ def setup_logging(debug: bool = False) -> None:
 
 
 def now_iso() -> str:
-    return datetime.utcnow().isoformat() + "Z"
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def make_log_entry(node: str, status: str, message: str, error: str | None = None) -> dict:

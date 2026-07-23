@@ -6,6 +6,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from backend.utils.helpers import retry_async
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,7 +41,7 @@ class TavilyClient:
         client = self._get_client()
         loop = asyncio.get_event_loop()
 
-        try:
+        async def _do_search() -> list[dict[str, str]]:
             result = await loop.run_in_executor(
                 None,
                 functools.partial(
@@ -59,6 +61,9 @@ class TavilyClient:
                 }
                 for r in result.get("results", [])
             ]
+
+        try:
+            return await retry_async(_do_search, max_retries=2, delay=1.0)
         except Exception as exc:
             logger.warning("Tavily search failed for query '%s': %s", query, exc)
             return []

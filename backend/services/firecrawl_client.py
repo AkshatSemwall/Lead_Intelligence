@@ -6,6 +6,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from backend.utils.helpers import retry_async
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,9 +20,13 @@ class FirecrawlClient:
 
     def _get_client(self) -> Any:
         if self._client is None:
+            api_key = getattr(self._settings, "firecrawl_api_key", None)
+            if not api_key:
+                self._client = None
+                return None
             from firecrawl import FirecrawlApp  # type: ignore
 
-            self._client = FirecrawlApp(api_key=self._settings.firecrawl_api_key)
+            self._client = FirecrawlApp(api_key=api_key)
         return self._client
 
     async def scrape_website(self, url: str) -> str:
@@ -32,15 +38,18 @@ class FirecrawlClient:
         import functools
 
         client = self._get_client()
+        if client is None:
+            return ""
         loop = asyncio.get_event_loop()
 
-        try:
+        async def _do_scrape() -> str:
             result = await loop.run_in_executor(
                 None,
                 functools.partial(
-                    client.scrape_url,
+                    client.scrape,
                     url,
-                    params={"formats": ["markdown"], "onlyMainContent": True},
+                    formats=["markdown"],
+                    only_main_content=True,
                 ),
             )
             markdown = ""
@@ -48,7 +57,12 @@ class FirecrawlClient:
                 markdown = result.get("markdown", "") or result.get("content", "")
             elif hasattr(result, "markdown"):
                 markdown = result.markdown or ""
-            return markdown[:15_000]  # cap to avoid token overflow
+            elif hasattr(result, "content"):
+                markdown = result.content or ""
+            return markdown[:15_000]
+
+        try:
+            return await retry_async(_do_scrape, max_retries=2, delay=1.0)
         except Exception as exc:
             logger.warning("Firecrawl scrape failed for '%s': %s", url, exc)
             return ""
@@ -62,31 +76,44 @@ class FirecrawlClient:
         import functools
 
         client = self._get_client()
+        if client is None:
+            return []
         loop = asyncio.get_event_loop()
 
-        try:
+        async def _do_crawl() -> list[dict[str, str]]:
             result = await loop.run_in_executor(
                 None,
                 functools.partial(
-                    client.crawl_url,
+                    client.crawl,
                     url,
-                    params={
-                        "limit": page_limit,
-                        "scrapeOptions": {"formats": ["markdown"]},
-                    },
+                    limit=page_limit,
+                    scrape_options={"formats": ["markdown"], "only_main_content": True},
                 ),
             )
-            pages = []
-            data = result if isinstance(result, list) else result.get("data", []) if isinstance(result, dict) else []
+            pages: list[dict[str, str]] = []
+            data: list[Any] = []
+            if isinstance(result, list):
+                data = result
+            elif isinstance(result, dict):
+                data = result.get("data", []) or result.get("pages", []) or []
+            elif hasattr(result, "data"):
+                data = getattr(result, "data", []) or []
+            elif hasattr(result, "pages"):
+                data = getattr(result, "pages", []) or []
             for page in data:
                 if isinstance(page, dict):
-                    pages.append(
-                        {
-                            "url": page.get("metadata", {}).get("sourceURL", url),
-                            "markdown": page.get("markdown", "")[:5000],
-                        }
-                    )
+                    markdown = page.get("markdown", "") or page.get("content", "") or ""
+                    metadata = page.get("metadata", {}) or {}
+                    page_url = metadata.get("sourceURL") or page.get("url") or url
+                    pages.append({"url": page_url, "markdown": markdown[:5000]})
+                elif hasattr(page, "markdown"):
+                    page_url = getattr(getattr(page, "metadata", None), "sourceURL", None) or getattr(page, "url", None) or url
+                    markdown = getattr(page, "markdown", "") or getattr(page, "content", "") or ""
+                    pages.append({"url": page_url, "markdown": markdown[:5000]})
             return pages
+
+        try:
+            return await retry_async(_do_crawl, max_retries=2, delay=1.0)
         except Exception as exc:
             logger.warning("Firecrawl crawl failed for '%s': %s", url, exc)
             return []

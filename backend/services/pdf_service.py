@@ -284,29 +284,53 @@ async def generate_pdf(
     lead_name: str,
     workflow_id: str,
 ) -> str:
-    """
-    Convert markdown report to a professional PDF.
-    Returns the absolute path to the generated PDF file.
-    """
+    """Convert markdown report to a professional PDF."""
     import asyncio
     import functools
-
-    from weasyprint import HTML, CSS  # type: ignore
 
     html_content = _markdown_to_html(markdown_content, company_name, lead_name)
 
     safe_company = "".join(c if c.isalnum() or c in "-_" else "_" for c in company_name)
     filename = f"report_{safe_company}_{workflow_id[:8]}.pdf"
     output_path = str(PDF_OUTPUT_DIR / filename)
+    PDF_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(
-        None,
-        functools.partial(
-            HTML(string=html_content, base_url=".").write_pdf,
-            output_path,
-        ),
-    )
+    try:
+        from weasyprint import HTML  # type: ignore
+
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(
+            None,
+            functools.partial(
+                HTML(string=html_content, base_url=".").write_pdf,
+                output_path,
+            ),
+        )
+    except Exception as exc:
+        logger.warning("WeasyPrint failed, using reportlab fallback: %s", exc)
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import inch
+        from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+        from reportlab.lib import colors
+
+        doc = SimpleDocTemplate(output_path, pagesize=A4, rightMargin=0.75 * inch, leftMargin=0.75 * inch, topMargin=0.75 * inch, bottomMargin=0.75 * inch)
+        styles = getSampleStyleSheet()
+        body = []
+        body.append(Paragraph(f"Business Audit Report — {company_name}", styles["Title"]))
+        body.append(Paragraph(f"Prepared for {lead_name}", styles["Heading2"]))
+        body.append(Spacer(1, 0.25 * inch))
+        for line in markdown_content.splitlines():
+            if line.startswith("# "):
+                body.append(Paragraph(line[2:], styles["Heading1"]))
+            elif line.startswith("## "):
+                body.append(Paragraph(line[3:], styles["Heading2"]))
+            elif line.startswith("- "):
+                body.append(Paragraph(line[2:], styles["BodyText"]))
+            else:
+                body.append(Paragraph(line or " ", styles["BodyText"]))
+            body.append(Spacer(1, 0.1 * inch))
+        doc.build(body)
 
     logger.info("PDF generated at %s", output_path)
     return output_path

@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs and runtime data
+workflow_logs/
+workflow_state/
+generated_pdfs/
+*.log
+
+# Frontend
+frontend/dist/
+frontend/node_modules/
+
+# OS
+.DS_Store
+Thumbs.db

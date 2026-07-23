@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.venv/
+node_modules/
+frontend/node_modules/
+workflow_state/
+generated_pdfs/
+workflow_logs/
+/dist/
+.DS_Store
+*.log

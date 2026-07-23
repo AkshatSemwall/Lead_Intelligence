@@ -5,21 +5,27 @@ from __future__ import annotations
 
 import logging
 import os
+import time
+import uuid
+from collections import defaultdict
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.api.routes import router
 from backend.config import get_settings
 from backend.graph.workflow import get_workflow
 from backend.utils.helpers import setup_logging
+from backend.services.google_config import validate_google_credentials
 
 settings = get_settings()
 setup_logging(debug=settings.debug)
 logger = logging.getLogger(__name__)
+_request_counts: dict[str, list[float]] = defaultdict(list)
 
 
 @asynccontextmanager
@@ -28,6 +34,7 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Lead Intelligence backend…")
     try:
         get_workflow()  # compile graph
+        validate_google_credentials()
         logger.info("LangGraph workflow compiled and ready")
     except Exception as exc:
         logger.error("Failed to compile LangGraph workflow: %s", exc)
@@ -50,9 +57,51 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+
+@app.middleware("http")
+async def add_request_context(request: Request, call_next):
+    headers = getattr(request, "headers", {})
+    request_id = headers.get("x-request-id") if hasattr(headers, "get") else None
+    if not request_id:
+        request_id = str(uuid.uuid4())
+    request.state.request_id = request_id
+
+    if settings.api_key:
+        provided_key = headers.get("x-api-key") if hasattr(headers, "get") else None
+        bearer = None
+        auth_header = headers.get("authorization") if hasattr(headers, "get") else None
+        if auth_header and auth_header.lower().startswith("bearer "):
+            bearer = auth_header[7:].strip()
+        if provided_key != settings.api_key and bearer != settings.api_key:
+            response = JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+            response.headers["x-request-id"] = request_id
+            response.headers["www-authenticate"] = 'Bearer realm="api"'
+            return response
+
+    client_key = headers.get("x-forwarded-for") or headers.get("x-real-ip") or "anonymous"
+    now = time.monotonic()
+    bucket = _request_counts[str(client_key)]
+    bucket[:] = [ts for ts in bucket if now - ts < settings.rate_limit_window_seconds]
+    if len(bucket) >= settings.rate_limit_requests:
+        response = JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"})
+        response.headers["x-request-id"] = request_id
+        response.headers["retry-after"] = str(settings.rate_limit_window_seconds)
+        return response
+    bucket.append(now)
+
+    response = await call_next(request)
+    response.headers["x-request-id"] = request_id
+    response.headers["x-content-type-options"] = "nosniff"
+    response.headers["x-frame-options"] = "DENY"
+    response.headers["referrer-policy"] = "strict-origin-when-cross-origin"
+    response.headers["x-ratelimit-limit"] = str(settings.rate_limit_requests)
+    response.headers["x-ratelimit-remaining"] = str(max(0, settings.rate_limit_requests - len(bucket)))
+    return response
 
 # API routes
 app.include_router(router, prefix="/api")
