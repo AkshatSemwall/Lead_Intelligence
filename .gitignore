@@ -25,6 +25,8 @@ frontend/node_modules/
 # OS
 .DS_Store
 Thumbs.db
-client_secret.json
-credentials.json
-token.json
+
+# Google OAuth secrets
+backend/client_secret.json
+backend/credentials.json
+backend/token.json
